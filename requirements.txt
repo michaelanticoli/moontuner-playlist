@@ -1,0 +1,5 @@
+# This project runs with the Python standard library by default.
+# Optional integrations:
+# - python-dotenv for loading .env files
+# - spotipy for publishing playlists to Spotify
+# - pyswisseph for higher-precision moon sign calculations
