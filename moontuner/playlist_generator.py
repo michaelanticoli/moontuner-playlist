@@ -1,20 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import os
 from typing import Any
 
-try:
-    from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - optional dependency
-    load_dotenv = None
-
-try:
-    import spotipy
-    from spotipy.oauth2 import SpotifyOAuth
-except ImportError:  # pragma: no cover - optional dependency
-    spotipy = None
-    SpotifyOAuth = None
+from . import spotify_client as _spotify
 
 
 @dataclass(frozen=True)
@@ -28,26 +17,35 @@ class PlaylistResult:
 
 class PlaylistGenerator:
     def __init__(self) -> None:
-        if load_dotenv is not None:
-            load_dotenv()
+        pass
 
-        self.spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
-        self.spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-        self.spotify_redirect_uri = os.getenv(
-            "SPOTIFY_REDIRECT_URI",
-            "http://localhost:8080/callback",
-        )
-
-    def generate(self, profile: dict, count: int = 12, publish_to_spotify: bool = False) -> PlaylistResult:
+    def generate(
+        self, profile: dict, count: int = 12, publish_to_spotify: bool = False
+    ) -> PlaylistResult:
         name = self.generate_name(profile["moon_sign"], profile["moon_phase"])
         description = self.generate_description(profile)
+
+        # Attempt real Spotify-backed selection when requested and credentials exist.
+        sp = _spotify.build_client() if publish_to_spotify else None
+
+        if sp is not None:
+            real_tracks = _spotify.select_tracks(sp, profile, count)
+            if real_tracks:
+                spotify_url: str | None = None
+                if publish_to_spotify:
+                    spotify_url = _spotify.publish_playlist(
+                        sp, name, description, real_tracks, public=True
+                    )
+                return PlaylistResult(
+                    name=name,
+                    description=description,
+                    tracks=real_tracks,
+                    published=spotify_url is not None,
+                    spotify_url=spotify_url,
+                )
+
+        # Offline fallback: deterministic preview tracks.
         preview_tracks = self._generate_preview_tracks(profile, count)
-
-        if publish_to_spotify:
-            published = self._publish_to_spotify(name, description, profile, preview_tracks)
-            if published is not None:
-                return published
-
         return PlaylistResult(name=name, description=description, tracks=preview_tracks)
 
     @staticmethod
@@ -90,47 +88,3 @@ class PlaylistGenerator:
             )
 
         return tracks
-
-    def _publish_to_spotify(
-        self,
-        name: str,
-        description: str,
-        profile: dict,
-        preview_tracks: list[dict[str, Any]],
-    ) -> PlaylistResult | None:
-        if not all([spotipy, SpotifyOAuth, self.spotify_client_id, self.spotify_client_secret]):
-            return None
-
-        spotify_client = spotipy.Spotify(
-            auth_manager=SpotifyOAuth(
-                client_id=self.spotify_client_id,
-                client_secret=self.spotify_client_secret,
-                redirect_uri=self.spotify_redirect_uri,
-                scope="playlist-modify-public",
-            )
-        )
-        user_id = spotify_client.current_user()["id"]
-        playlist = spotify_client.user_playlist_create(
-            user=user_id,
-            name=name,
-            public=True,
-            description=description,
-        )
-
-        uris = []
-        for track in preview_tracks:
-            result = spotify_client.search(q=track["search_hint"], type="track", limit=1)
-            items = result.get("tracks", {}).get("items", [])
-            if items:
-                uris.append(items[0]["uri"])
-
-        if uris:
-            spotify_client.playlist_add_items(playlist["id"], uris)
-
-        return PlaylistResult(
-            name=name,
-            description=description,
-            tracks=preview_tracks,
-            published=True,
-            spotify_url=playlist["external_urls"]["spotify"],
-        )
