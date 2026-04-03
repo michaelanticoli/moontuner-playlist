@@ -1,5 +1,12 @@
-# This project runs with the Python standard library by default.
-# Optional integrations:
-# - python-dotenv for loading .env files
-# - spotipy for publishing playlists to Spotify
-# - pyswisseph for higher-precision moon sign calculations
+# MoonTuner runs with the Python standard library by default.
+# Optional integrations (install as needed):
+
+# Spotify playlist publishing and track selection
+# spotipy>=2.23
+# python-dotenv>=1.0
+
+# Higher-precision moon sign calculations
+# pyswisseph>=2.10
+
+# Development tools
+# ruff>=0.4

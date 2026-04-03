@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .aspects import Aspect
 
 
 MOON_SIGN_PROFILES = {
@@ -127,14 +131,46 @@ MOON_SIGN_PROFILES = {
 }
 
 PHASE_MODIFIERS = {
-    "new_moon": {"energy_modifier": -0.10, "valence_modifier": -0.05, "description": "Introspective and minimal"},
-    "waxing_crescent": {"energy_modifier": 0.05, "valence_modifier": 0.05, "description": "Building energy"},
-    "first_quarter": {"energy_modifier": 0.10, "valence_modifier": 0.05, "description": "Taking action"},
-    "waxing_gibbous": {"energy_modifier": 0.15, "valence_modifier": 0.10, "description": "Refining and adjusting"},
-    "full_moon": {"energy_modifier": 0.20, "valence_modifier": 0.10, "description": "Peak intensity"},
-    "waning_gibbous": {"energy_modifier": 0.05, "valence_modifier": 0.00, "description": "Gratitude and sharing"},
-    "last_quarter": {"energy_modifier": -0.05, "valence_modifier": -0.05, "description": "Release and letting go"},
-    "waning_crescent": {"energy_modifier": -0.10, "valence_modifier": -0.10, "description": "Rest and renewal"},
+    "new_moon": {
+        "energy_modifier": -0.10,
+        "valence_modifier": -0.05,
+        "description": "Introspective and minimal",
+    },
+    "waxing_crescent": {
+        "energy_modifier": 0.05,
+        "valence_modifier": 0.05,
+        "description": "Building energy",
+    },
+    "first_quarter": {
+        "energy_modifier": 0.10,
+        "valence_modifier": 0.05,
+        "description": "Taking action",
+    },
+    "waxing_gibbous": {
+        "energy_modifier": 0.15,
+        "valence_modifier": 0.10,
+        "description": "Refining and adjusting",
+    },
+    "full_moon": {
+        "energy_modifier": 0.20,
+        "valence_modifier": 0.10,
+        "description": "Peak intensity",
+    },
+    "waning_gibbous": {
+        "energy_modifier": 0.05,
+        "valence_modifier": 0.00,
+        "description": "Gratitude and sharing",
+    },
+    "last_quarter": {
+        "energy_modifier": -0.05,
+        "valence_modifier": -0.05,
+        "description": "Release and letting go",
+    },
+    "waning_crescent": {
+        "energy_modifier": -0.10,
+        "valence_modifier": -0.10,
+        "description": "Rest and renewal",
+    },
 }
 
 
@@ -150,6 +186,17 @@ class MoodMapper:
         base["target_valence"] = self._bounded(base["valence"] + phase["valence_modifier"])
 
         return base
+
+    def apply_transit_modifiers(self, profile: dict, aspects: list[Aspect]) -> dict:
+        """Apply transit aspect modifiers to an existing profile in-place and return it."""
+        for aspect in aspects:
+            profile["target_energy"] = self._bounded(
+                profile["target_energy"] + aspect.energy_modifier * aspect.intensity
+            )
+            profile["target_valence"] = self._bounded(
+                profile["target_valence"] + aspect.valence_modifier * aspect.intensity
+            )
+        return profile
 
     @staticmethod
     def _bounded(value: float) -> float:

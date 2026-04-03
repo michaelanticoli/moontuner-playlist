@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moontuner-playlist"
+version = "0.2.0"
+description = "Astrologically-driven Spotify playlist generator"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["astrology", "spotify", "playlist", "moon"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+# Core runtime – stdlib only; everything else is optional.
+dependencies = []
+
+[project.optional-dependencies]
+spotify = ["spotipy>=2.23", "python-dotenv>=1.0"]
+ephemeris = ["pyswisseph>=2.10"]
+dev = [
+    "ruff>=0.4",
+    "pyright>=1.1",
+    "spotipy>=2.23",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+moontuner = "moontuner.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["moontuner*"]
+
+# ---------------------------------------------------------------------------
+# Ruff (format + lint)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "RUF"]
+ignore = ["E501"]  # line-length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
