@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import date, datetime, time
-import math
 
 try:
     import swisseph  # type: ignore
@@ -43,6 +43,8 @@ class MoonReading:
     moon_phase: str
     illuminated_fraction: float
     source: str
+    moon_longitude: float = 0.0
+    moon_degree_within_sign: float = 0.0
 
 
 class MoonCalculator:
@@ -89,6 +91,8 @@ class MoonCalculator:
             moon_phase=self._phase_name(phase_fraction),
             illuminated_fraction=(1 - math.cos(phase_fraction * 2 * math.pi)) / 2,
             source="swisseph",
+            moon_longitude=moon_longitude,
+            moon_degree_within_sign=moon_longitude % 30,
         )
 
     def _calculate_with_approximation(self, moment: datetime) -> MoonReading:
@@ -101,6 +105,8 @@ class MoonCalculator:
             moon_phase=self._phase_name(phase_fraction),
             illuminated_fraction=(1 - math.cos(phase_fraction * 2 * math.pi)) / 2,
             source="approximation",
+            moon_longitude=moon_longitude,
+            moon_degree_within_sign=moon_longitude % 30,
         )
 
     @staticmethod
@@ -126,12 +132,7 @@ class MoonCalculator:
     def _julian_day(moment: datetime) -> float:
         year = moment.year
         month = moment.month
-        day = (
-            moment.day
-            + moment.hour / 24
-            + moment.minute / 1440
-            + moment.second / 86400
-        )
+        day = moment.day + moment.hour / 24 + moment.minute / 1440 + moment.second / 86400
 
         if month <= 2:
             year -= 1
